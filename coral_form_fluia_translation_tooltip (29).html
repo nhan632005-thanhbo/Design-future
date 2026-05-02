@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Multisensory Translation System: Coral to Human</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ebebeb;
+  --bg2:#e2e0da;
+  --ink:#1a1612;
+  --ink2:#3a3530;
+  --ink3:#6a6560;
+  --ink4:#9a9590;
+  --red:#c03020;
+  --orange:#c87020;
+  --teal:#1a7060;
+  --blue:#2050a0;
+  --purple:#5a4a90;
+  --green:#2a6040;
+  --rule:rgba(26,22,18,.1);
+  --serif:'Playfair Display',Georgia,serif;
+  --mono:'DM Mono','Courier New',monospace;
+  --sans:'DM Sans',system-ui,sans-serif;
+}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh}
+
+/* ── MASTHEAD ── */
+#masthead{
+  border-bottom:1px solid var(--rule);
+  padding:18px 40px 14px;
+  display:grid;
+  grid-template-columns:180px 1fr 180px;
+  align-items:start;
+  gap:0;
+  background:var(--bg);
+}
+.mast-left{display:flex;flex-direction:column;gap:4px}
+.mast-kicker{font-family:var(--mono);font-size:7px;letter-spacing:.22em;color:var(--ink3);text-transform:uppercase;line-height:1.4}
+.mast-live{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;color:var(--red);letter-spacing:.1em}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.mast-center{text-align:center;padding:0 20px;overflow:visible}
+.mast-h1{font-family:var(--serif);font-size:52px;line-height:.95;letter-spacing:-.01em;margin-bottom:6px;font-style:italic;background:linear-gradient(90deg,#4ab8c1 0%,#5b9fd4 18%,#6db86a 34%,#c8b820 50%,#e87820 66%,#c83020 80%,#8b2060 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.mast-h1 em{font-style:italic}
+.mast-h1 strong{font-weight:700}
+.mast-h2{font-family:var(--serif);font-size:44px;line-height:.92;letter-spacing:-.01em;color:var(--ink2);margin-bottom:8px;font-style:italic}
+.mast-h2 em{font-style:italic;color:var(--orange)}
+.mast-h2 .human-word{font-weight:400;color:#c83020;font-style:italic}
+.mast-deck{font-family:var(--sans);font-size:10px;color:var(--ink3);font-weight:300;line-height:1.5;max-width:460px;margin:0 auto}
+.mast-right{text-align:right;display:flex;flex-direction:column;gap:2px}
+.mast-updated{font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:var(--ink4);text-transform:uppercase;margin-bottom:2px}
+.mast-date{font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:.06em}
+.mast-issue{font-family:var(--mono);font-size:7px;color:var(--ink4);letter-spacing:.12em}
+
+/* ── RULE ── */
+.rule{height:1px;background:var(--rule)}
+.rule-thick{height:1.5px;background:rgba(26,22,18,.18)}
+
+/* ── KPI BAR ── */
+#kpi-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--rule);
+  background:var(--bg);
+}
+.kpi{padding:12px 24px;border-right:1px solid var(--rule)}
+.kpi:last-child{border-right:none}
+.kpi-label{font-family:var(--mono);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;line-height:1.3}
+.kpi-num{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1;color:var(--ink)}
+.kpi-unit{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-left:2px}
+.kpi-sub{font-family:var(--mono);font-size:7px;margin-top:4px;letter-spacing:.05em}
+.kpi-sub.up{color:var(--red)}
+.kpi-sub.dn{color:var(--teal)}
+
+/* ── BODY ── */
+/* ══ LAYOUT ══════════════════════════════════════════════ */
+html,body{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* BODY: 3 columns, canvas+sliders | translation */
+#body{
+  display:grid;
+  grid-template-columns:58% 42%;
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+  margin:0 10px 6px;
+  gap:6px;
+}
+
+/* ── CANVAS COLUMN (left 1fr) ────────────────────────── */
+#left-col{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;min-height:0;height:100%;
+  background:#e8e4dc;
+  box-shadow:3px 3px 0 rgba(0,0,0,.75);
+  border:1px solid rgba(26,22,18,.3);
+}
+
+/* scenario strip */
+#scenario-strip{
+  padding:5px 10px;
+  border-bottom:0.5px solid var(--rule);
+  display:flex;align-items:center;gap:4px;
+  flex-shrink:0;
+}
+.scenario-label{
+  font-family:var(--mono);font-size:7px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink4);margin-right:3px;
+}
+.scenario-btn{
+  font-family:var(--mono);font-size:7px;letter-spacing:.06em;
+  padding:3px 9px;border:1px solid var(--rule);
+  background:transparent;cursor:pointer;color:var(--ink3);transition:all .12s;
+}
+.scenario-btn:hover{border-color:var(--ink);color:var(--ink)}
+.scenario-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* bio strip, compact single row */
+#bio-strip{
+  padding:3px 10px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;gap:0;flex-shrink:0;
+}
+.bio-item{
+  padding:2px 10px;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:0;
+}
+.bio-item:first-child{padding-left:0}
+.bio-item:last-child{border-right:none}
+.bio-key{font-family:var(--mono);font-size:6px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)}
+.bio-val{font-family:var(--mono);font-size:9px;font-weight:500}
+
+/* reef canvas, fills remaining height */
+#reef-canvas-wrap{
+  position:relative;overflow:hidden;
+  flex:1;min-height:0;max-height:280px;
+}
+canvas#reef-cv{display:block;width:100%;height:auto;}
+#state-flag{
+  position:absolute;top:6px;left:10px;
+  font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 8px;background:var(--bg);border:1px solid var(--rule);
+}
+
+/* ── HORIZONTAL SLIDERS STRIP (above canvas) ─────────── */
+#slider-strip{
+  display:grid;
+  grid-template-columns:58% 42%;
+  border-bottom:1px solid var(--rule);
+  background:var(--bg2);
+  flex-shrink:0;
+}
+.vsl-group{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-right:1px solid var(--rule);
+}
+.vsl-group:last-child{border-right:none}
+.vsl-label{
+  font-family:var(--mono);font-size:6px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink4);
+  white-space:nowrap;
+}
+.vsl-val-wrap{
+  display:flex;flex-direction:column;align-items:flex-end;
+  white-space:nowrap;
+}
+.vsl-num{
+  font-family:var(--serif);font-size:13px;font-weight:700;
+  color:var(--ink);line-height:1;
+}
+.vsl-unit{font-family:var(--mono);font-size:7px;color:var(--ink3)}
+.vsl-tick{display:none}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:1px;
+  border-radius:1px;outline:none;cursor:pointer;
+  background:rgba(26,22,18,.3);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;
+  border-radius:50%;cursor:pointer;background:var(--ink);
+}
+input[type=range]::-moz-range-thumb{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--ink);border:none;cursor:pointer;
+}
+#sliders-row{display:none}
+
+/* ── TRANSLATION COLUMN (right 1fr) ──────────────────── */
+#right-col-trans{
+  display:flex;flex-direction:column;
+  overflow:hidden;height:100%;
+  background:#e8e4dc;
+  box-shadow:3px 3px 0 rgba(0,0,0,.75);
+  border:1px solid rgba(26,22,18,.3);
+}
+#trans-wrap{flex:1;overflow-y:auto}
+.trans-header{
+  display:grid;grid-template-columns:1fr 18px 1fr;
+  padding:5px 16px;border-bottom:1px solid var(--rule);
+  background:rgba(235,231,223,.6);flex-shrink:0;
+}
+.trans-hdr-cell{font-family:var(--mono);font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink4)}
+.trans-row{
+  display:grid;grid-template-columns:1fr 18px 1fr;
+  border-bottom:0.5px solid var(--rule);
+  padding:5px 14px;cursor:default;
+}
+.trans-row:hover{background:var(--bg2)}
+.tc-label{font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px}
+.tc-val{font-family:var(--mono);font-size:8px;font-weight:500;margin-bottom:1px}
+.tc-bar{height:1.5px;background:var(--rule);border-radius:1px;overflow:hidden}
+.tc-fill{height:100%;border-radius:1px;transition:width .4s ease}
+.th-label{font-family:var(--sans);font-size:7px;color:var(--ink3);margin-bottom:1px}
+.th-val{font-family:var(--serif);font-size:11px;font-weight:700;margin-bottom:1px;line-height:1.1}
+.th-feel{font-family:var(--sans);font-size:7px;color:var(--ink3);font-style:italic;line-height:1.3;border-left:1.5px solid currentColor;padding-left:5px;margin-top:1px}
+.th-organ{font-family:var(--mono);font-size:6px;color:var(--ink4);margin-top:2px;letter-spacing:.05em}
+.trans-arrow{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink4)}
+
+
+/* ── ONBOARDING POPUP ─────────────────────────────────── */
+#ob-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(26,22,18,.55);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(2px);
+}
+#ob-box{
+  background:var(--bg);
+  width:min(520px,92vw);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(26,22,18,.22);
+  display:flex;flex-direction:column;
+}
+/* progress bar top */
+#ob-progress{height:3px;background:rgba(26,22,18,.08)}
+#ob-progress-fill{height:100%;background:var(--ink);transition:width .35s ease;width:0%}
+/* header */
+#ob-hdr{padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.ob-step-lbl{font-family:var(--mono);font-size:7px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink4)}
+#ob-skip{background:transparent;border:none;cursor:pointer;font-family:var(--mono);font-size:8px;color:var(--ink4);padding:0;letter-spacing:.06em}
+#ob-skip:hover{color:var(--ink)}
+/* content */
+#ob-content{padding:20px 24px 16px;min-height:200px}
+.ob-icon{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);font-family:var(--mono);font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;margin-bottom:14px;letter-spacing:0;flex-shrink:0}
+.ob-title{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px;line-height:1.2}
+.ob-body{font-family:var(--sans);font-size:11px;line-height:1.65;color:var(--ink2)}
+.ob-body strong{font-weight:500;color:var(--ink)}
+.ob-body em{font-style:italic;color:var(--ink3)}
+/* visual hint inside popup */
+.ob-hint{
+  margin-top:14px;padding:10px 12px;
+  background:var(--bg2);border-radius:4px;
+  border-left:2px solid var(--rule);
+  font-family:var(--mono);font-size:8px;color:var(--ink3);
+  line-height:1.5;
+}
+.ob-hint strong{color:var(--ink)}
+/* channels quick list */
+.ob-channels{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.ob-ch{display:flex;align-items:center;gap:10px}
+.ob-ch-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ob-ch-text{font-family:var(--sans);font-size:10px;color:var(--ink2);line-height:1.3}
+.ob-ch-text strong{font-weight:500}
+/* footer nav */
+#ob-footer{
+  padding:12px 24px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-top:1px solid var(--rule);
+  gap:10px;
+}
+.ob-dots{display:flex;gap:5px;align-items:center}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(26,22,18,.15);transition:all .2s}
+.ob-dot.active{background:var(--ink);width:18px;border-radius:3px}
+.ob-btn{
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  padding:8px 18px;border-radius:3px;cursor:pointer;transition:all .15s;
+}
+#ob-prev{background:transparent;border:1px solid var(--rule);color:var(--ink3)}
+#ob-prev:hover{border-color:var(--ink);color:var(--ink)}
+#ob-next{background:var(--ink);border:1px solid var(--ink);color:var(--bg)}
+#ob-next:hover{background:#3a3530}
+
+/* ── GUIDE PANEL ── */
+#guide-toggle{
+  position:fixed;bottom:24px;right:24px;z-index:200;
+  width:38px;height:38px;border-radius:50%;
+  background:var(--ink);color:var(--bg);
+  border:none;cursor:pointer;font-family:var(--mono);font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(26,22,18,.18);
+  transition:background .15s;
+}
+#guide-toggle:hover{background:var(--red)}
+#guide-panel{
+  position:fixed;bottom:72px;right:24px;z-index:199;
+  width:340px;max-height:calc(100vh - 100px);
+  background:var(--bg);
+  border:1px solid rgba(26,22,18,.18);
+  border-radius:6px;
+  box-shadow:0 4px 24px rgba(26,22,18,.14);
+  display:flex;flex-direction:column;
+  transform:translateY(12px) scale(.97);
+  opacity:0;pointer-events:none;
+  transition:all .2s ease;
+  overflow:hidden;
+}
+#guide-panel.open{
+  transform:translateY(0) scale(1);
+  opacity:1;pointer-events:auto;
+}
+.gp-hdr{
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;
+  flex-shrink:0;
+}
+.gp-title{font-family:var(--serif);font-size:14px;font-weight:700;color:var(--ink)}
+.gp-sub{font-family:var(--mono);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.gp-body{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.gp-section{}
+.gp-sec-title{
+  font-family:var(--mono);font-size:7px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink4);margin-bottom:8px;
+  padding-bottom:4px;border-bottom:0.5px solid var(--rule);
+}
+.gp-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
+.gp-step:last-child{margin-bottom:0}
+.gp-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--ink);color:var(--bg);
+  font-family:var(--mono);font-size:8px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.gp-text{font-family:var(--sans);font-size:9px;line-height:1.55;color:var(--ink2)}
+.gp-text strong{font-weight:500;color:var(--ink)}
+.gp-text em{font-style:italic;color:var(--ink3)}
+.gp-ch{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.gp-ch-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.gp-ch-info{display:flex;flex-direction:column;gap:0}
+.gp-ch-name{font-family:var(--mono);font-size:8px;font-weight:500}
+.gp-ch-desc{font-family:var(--sans);font-size:8px;color:var(--ink3);line-height:1.4}
+.gp-tag{
+  display:inline-block;padding:1px 6px;
+  border:0.5px solid var(--rule);border-radius:2px;
+  font-family:var(--mono);font-size:7px;color:var(--ink3);
+  margin:2px 2px 0 0;
+}
+.gp-divider{height:0.5px;background:var(--rule);margin:2px 0}
+.gp-note{
+  font-family:var(--sans);font-size:8px;line-height:1.5;
+  color:var(--ink3);font-style:italic;
+  padding:8px 10px;background:var(--bg2);border-radius:3px;
+  border-left:2px solid var(--orange);
+}
+.term{
+  cursor:default;
+  position:relative;
+  display:inline;
+  font-weight:inherit;
+  transition:font-weight .1s;
+}
+.term:hover{font-weight:700;}
+#term-tip{
+  position:fixed;
+  z-index:999;
+  max-width:300px;
+  background:var(--ink);
+  color:var(--bg);
+  border-radius:4px;
+  padding:10px 13px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s ease;
+  font-family:var(--sans);
+}
+#term-tip.visible{opacity:1}
+.tt-term{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,240,232,.45);margin-bottom:4px}
+.tt-body{font-size:10px;line-height:1.55;color:rgba(245,240,232,.9)}
+.tt-src{font-family:var(--mono);font-size:7px;color:rgba(245,240,232,.35);margin-top:5px;letter-spacing:.06em}
+
+/* ── RIGHT COL ── */
+#right-col{display:flex;flex-direction:column;overflow-y:auto}
+.rc-section{padding:16px 18px;border-bottom:1px solid var(--rule)}
+.rc-title{
+  font-family:var(--mono);font-size:7px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.rc-count{font-family:var(--serif);font-size:14px;font-weight:700;color:var(--ink)}
+
+/* glossary */
+.gloss-entry{margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid var(--rule)}
+.gloss-entry:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.gloss-term{font-family:var(--serif);font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.gloss-def{font-family:var(--sans);font-size:9px;color:var(--ink2);line-height:1.5}
+.gloss-formula{font-family:var(--mono);font-size:8px;color:var(--blue);margin-top:2px;letter-spacing:.04em}
+
+/* formula block */
+.formula-block{
+  background:var(--bg2);border-left:2px solid var(--ink);
+  padding:8px 10px;margin-top:6px;
+}
+.formula-text{font-family:var(--mono);font-size:8px;color:var(--ink);line-height:1.6}
+
+/* channel legend */
+.ch-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.ch-swatch{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ch-name{font-family:var(--mono);font-size:8px;color:var(--ink2);flex:1}
+.ch-range{font-family:var(--mono);font-size:7px;color:var(--ink4)}
+
+/* pull quote */
+.pull-block{
+  padding:16px 18px;
+  border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);
+  background:var(--ink);
+}
+.pull-open{font-family:var(--serif);font-size:22px;line-height:.8;color:var(--orange);margin-bottom:4px}
+.pull-text{font-family:var(--serif);font-size:13px;font-style:italic;line-height:1.6;color:var(--bg)}
+.pull-text em{font-style:normal;color:var(--orange);font-weight:700}
+.pull-attr{font-family:var(--mono);font-size:7px;color:rgba(235,231,223,.4);margin-top:6px;letter-spacing:.1em;text-transform:uppercase}
+
+/* sources */
+.src-row{margin-bottom:5px;padding-bottom:5px;border-bottom:0.5px solid var(--rule)}
+.src-row:last-child{border-bottom:none;margin-bottom:0}
+.src-ref{font-family:var(--mono);font-size:7px;color:var(--ink3);line-height:1.5}
+.src-link{color:var(--blue);text-decoration:none}
+.src-link:hover{text-decoration:underline}
+
+/* footer */
+#footer{
+  border-top:1px solid var(--rule);
+  padding:4px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--bg2);
+  flex-shrink:0;
+}
+.footer-txt{font-family:var(--mono);font-size:6px;color:var(--ink4);letter-spacing:.08em}
+
+/* ── DARK NAVBAR ── */
+#navbar{
+  background:#111;color:#e8e4dc;
+  display:flex;align-items:center;
+  padding:0 18px;height:36px;
+  flex-shrink:0;gap:0;
+  position:relative;
+}
+.nb-brand{
+  font-family:var(--mono);font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(232,228,220,.45);
+  white-space:nowrap;
+}
+/* nav links — centered */
+.nb-nav{display:flex;align-items:stretch;position:absolute;left:50%;transform:translateX(-50%)}
+.nb-link{
+  font-family:var(--mono);font-size:8px;letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(232,228,220,.45);
+  padding:0 16px;display:flex;align-items:center;
+  cursor:pointer;border-right:1px solid rgba(255,255,255,.08);
+  transition:color .15s,background .15s;
+  text-decoration:none;white-space:nowrap;
+  border-bottom:2px solid transparent;
+}
+.nb-link:hover{color:rgba(232,228,220,.85);background:rgba(255,255,255,.05)}
+.nb-link.active{
+  color:#e8e4dc;
+  border-bottom:2px solid #c03020;
+  background:rgba(255,255,255,.04);
+}
+.nb-sep{width:1px;height:16px;background:rgba(255,255,255,.1);margin:0 4px}
+.nb-live{
+  font-family:var(--mono);font-size:7px;letter-spacing:.1em;
+  color:#c03020;display:flex;align-items:center;gap:4px;
+  padding-left:16px;border-left:1px solid rgba(255,255,255,.08);
+}
+.nb-live-dot{width:5px;height:5px;border-radius:50%;background:#c03020;animation:blink 1.2s infinite}
+
+
+/* ── PAGES CONTAINER ── */
+#pages-container{
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+#pages-container .page{
+  flex:1;min-height:0;
+}
+/* ── PAGES ── */
+.page{display:none;flex:1;min-height:0;overflow:hidden;flex-direction:column}
+.page.active{display:flex}
+#page-proposal{
+  align-items:center;justify-content:center;
+  background:#e8e4dc;
+}
+#fp-wrap{
+  width:100%;height:100%;
+  display:flex;flex-direction:column;
+  padding:10px;gap:10px;
+  overflow-y:auto;
+}
+#fp-wrap .fp-book{
+  flex-shrink:0;height:calc(100vh - 120px);
+  border:1px solid rgba(26,22,18,.15);
+  box-shadow:3px 3px 0 rgba(0,0,0,.75);
+}
+#fp-wrap .fp-video-wrap{
+  flex-shrink:0;
+  position:relative;width:100%;padding-top:56.25%;
+  border:1px solid rgba(26,22,18,.15);
+  box-shadow:3px 3px 0 rgba(0,0,0,.75);
+}
+#fp-wrap .fp-video-wrap iframe{
+  position:absolute;top:0;left:0;width:100%;height:100%;border:none;
+}
+
+/* ── ATLAS PAGE ── */
+#page-atlas{
+  flex-direction:column;
+  overflow:hidden;
+  background:#e8e4dc;
+}
+/* atlas sub-nav */
+#atlas-subnav{
+  display:flex;align-items:stretch;
+  border-bottom:1px solid rgba(26,22,18,.18);
+  background:#111;
+  flex-shrink:0;
+}
+.atlas-tab{
+  font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(232,228,220,.4);
+  padding:0 20px;height:32px;
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer;border-right:1px solid rgba(255,255,255,.07);
+  transition:color .15s,background .15s;
+  border-bottom:2px solid transparent;
+}
+.atlas-tab:hover{color:rgba(232,228,220,.8);background:rgba(255,255,255,.05)}
+.atlas-tab.active{color:#e8e4dc;border-bottom:2px solid #c03020;background:rgba(255,255,255,.04)}
+.atlas-tab .atab-num{
+  font-family:var(--serif);font-style:italic;font-size:13px;
+  color:#c8a020;letter-spacing:0;
+}
+/* atlas sub-pages */
+#atlas-home, .atlas-sub{display:none;flex:1;min-height:0;overflow-y:auto;}
+#atlas-home.active, .atlas-sub.active{display:block;}
+
+/* atlas home grid */
+.atlas-home-inner{
+  max-width:900px;margin:0 auto;padding:28px 24px;
+}
+.atlas-home-title{
+  font-family:var(--serif);font-size:clamp(28px,3vw,42px);
+  font-weight:300;letter-spacing:-.02em;
+  margin-bottom:6px;line-height:1;
+}
+.atlas-home-title em{font-style:italic;
+  background:linear-gradient(95deg,#5fb4d6,#ef7a3e,#d92b2b);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.atlas-home-lede{
+  font-family:var(--serif);font-style:italic;font-size:14px;
+  line-height:1.5;color:var(--ink3);max-width:560px;margin-bottom:24px;
+}
+.atlas-cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.atlas-card-mini{
+  background:var(--bg);border:1px solid rgba(26,22,18,.25);
+  box-shadow:4px 4px 0 rgba(0,0,0,.75);
+  padding:16px;cursor:pointer;transition:transform .15s,box-shadow .15s;
+  display:flex;flex-direction:column;gap:8px;
+}
+.atlas-card-mini:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 rgba(0,0,0,.75)}
+.acm-num{
+  font-family:var(--serif);font-style:italic;font-size:22px;
+  line-height:1;letter-spacing:-.02em;
+}
+.acm-tag{font-family:var(--mono);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4)}
+.acm-title{font-family:var(--serif);font-size:15px;font-weight:400;line-height:1.1;letter-spacing:-.01em}
+.acm-title em{font-style:italic;color:var(--ink3)}
+.acm-desc{font-family:var(--sans);font-size:10px;line-height:1.5;color:var(--ink3)}
+.acm-swatch{width:100%;height:4px;border-radius:1px;margin-top:4px;}
+.acm-foot{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:auto;padding-top:8px;border-top:0.5px solid var(--rule);
+  font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);
+}
+
+/* atlas sub pages (iframes) */
+.atlas-sub iframe{
+  width:100%;height:100%;
+  border:none;display:block;
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div id="navbar">
+  <span class="nb-brand">● Coral Atlas</span>
+  <nav class="nb-nav">
+    <a class="nb-link" onclick="nbSelect(this)" href="#">Introduction</a>
+    <a class="nb-link" onclick="nbSelect(this)" href="#">Proposal</a>
+    <a class="nb-link" onclick="nbSelect(this)" href="#">Atlas</a>
+    <a class="nb-link active" onclick="nbSelect(this)" href="#">Translation System</a>
+    <a class="nb-link" onclick="nbSelect(this)" href="#">Our Team</a>
+  </nav>
+  <div class="nb-live"><span class="nb-live-dot"></span>Live · NOAA CRW</div>
+</div>
+
+<div id="pages-container">
+<div id="page-translation" class="page active">
+<!-- MASTHEAD -->
+<div id="masthead">
+  <div class="mast-left">
+    <span class="mast-kicker">Real-Time Reef Stress Monitor<br>Indo-Pacific · South China Sea</span>
+    <div style="margin-top:6px">
+      <div class="mast-live"><span class="live-dot"></span>Live Feed · NOAA CRW</div>
+    </div>
+    <div style="margin-top:4px">
+      <span class="mast-kicker" style="color:var(--ink2)">CORAL · ATLAS 86.4</span>
+    </div>
+  </div>
+  <div class="mast-center">
+    <div class="mast-h1"><span class="grad">Multisensory</span> <span class="plain">Translation System</span></div>
+    <div class="mast-h2">Coral to <span class="human-word">Human</span></div>
+    <div class="mast-deck">A sensory translation of reef stress signals: how the ocean's distress becomes legible to the human body, across six biological channels.</div>
+  </div>
+  <div class="mast-right">
+    <span class="mast-updated">Updated</span>
+    <span class="mast-date" id="clock">—</span>
+    <div style="margin-top:6px">
+      <div class="mast-issue">Issue Nº 042 · Vol II</div>
+    </div>
+  </div>
+</div>
+
+<div class="rule-thick"></div>
+
+<!-- KPI BAR -->
+<div id="kpi-bar">
+  <div class="kpi">
+    <div class="kpi-label">Sea Surface Temp</div>
+    <div><span class="kpi-num" id="kpi-sst">27.0</span><span class="kpi-unit">°C</span></div>
+    <div class="kpi-sub up" id="kpi-sst-d">● ΔT +0.0°C above MMM</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">DHW Accumulated</div>
+    <div><span class="kpi-num" id="kpi-dhw">0.0</span><span class="kpi-unit">°C·wk</span></div>
+    <div class="kpi-sub" id="kpi-dhw-d" style="color:var(--teal)">● No bleaching risk</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Photosynthetic Yield</div>
+    <div><span class="kpi-num" id="kpi-fvm">0.68</span><span class="kpi-unit">Fv/Fm</span></div>
+    <div class="kpi-sub dn" id="kpi-fvm-d">● Healthy, peak efficiency</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Reef Status</div>
+    <div style="margin-top:2px"><span class="kpi-num" id="kpi-state" style="font-size:22px;color:var(--teal)">Healthy</span></div>
+    <div class="kpi-sub dn" id="kpi-state-d">● ZX 100% · ROS 1.0× · Hz 0.0</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div id="body">
+
+  <!-- LEFT COL: scenario + bio + canvas -->
+  <div id="left-col">
+
+    <!-- SCENARIO STRIP -->
+    <div id="scenario-strip">
+      <span class="scenario-label">Scenario</span>
+      <button class="scenario-btn active" onclick="setScenario(27,0)">Healthy</button>
+      <button class="scenario-btn" onclick="setScenario(29.5,3)">Heat Stress</button>
+      <button class="scenario-btn" onclick="setScenario(31.5,6)">Bleaching</button>
+      <button class="scenario-btn" onclick="setScenario(33.5,12)">Mass Mortality</button>
+    </div>
+
+    <!-- SLIDERS STRIP -->
+    <div id="slider-strip">
+      <div class="vsl-group">
+        <span class="vsl-label">SST</span>
+        <input type="range" id="st" min="24" max="34" step="0.1" value="27">
+        <div class="vsl-val-wrap">
+          <span class="vsl-num" id="vt">27.0</span>
+          <span class="vsl-unit">°C</span>
+        </div>
+      </div>
+      <div class="vsl-group">
+        <span class="vsl-label">DHW</span>
+        <input type="range" id="sd" min="0" max="14" step="0.1" value="0">
+        <div class="vsl-val-wrap">
+          <span class="vsl-num" id="vd">0.0</span>
+          <span class="vsl-unit">wks</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIO BADGES -->
+    <div id="bio-strip">
+      <div class="bio-item">
+        <span class="bio-key">Fv/Fm</span>
+        <span class="bio-val" id="b-fvm" style="color:var(--teal)">0.68</span>
+      </div>
+      <div class="bio-item">
+        <span class="bio-key">Zooxanthellae</span>
+        <span class="bio-val" id="b-zx" style="color:var(--green)">100%</span>
+      </div>
+      <div class="bio-item">
+        <span class="bio-key">ROS</span>
+        <span class="bio-val" id="b-ros" style="color:var(--teal)">1.0×</span>
+      </div>
+      <div class="bio-item">
+        <span class="bio-key">AP Frequency</span>
+        <span class="bio-val" id="b-hz" style="color:var(--orange)">0.0 Hz</span>
+      </div>
+      <div class="bio-item">
+        <span class="bio-key">Water pH</span>
+        <span class="bio-val" id="b-ph" style="color:var(--teal)">8.30</span>
+      </div>
+    </div>
+
+    <!-- CORAL CANVAS -->
+    <div id="reef-canvas-wrap">
+      <canvas id="reef-cv" width="720" height="200"></canvas>
+      <div id="state-flag">● Healthy Reef · 27.0°C</div>
+    </div>
+
+  </div><!-- end #left-col -->
+
+
+
+  <!-- RIGHT COL: translation -->
+  <div id="right-col-trans">
+    <div id="trans-wrap">
+      <div class="trans-header">
+        <span class="trans-hdr-cell">Coral signal</span>
+        <span></span>
+        <span class="trans-hdr-cell">Human sensation</span>
+      </div>
+      <div id="trans-body"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <span class="footer-txt">Coral &amp; Fluia · Under Pressure · Atlas Nº 042 · Vol II</span>
+  <span class="footer-txt">All formulae are qualitative mappings based on published biological data. Not clinical measurements.</span>
+  <span class="footer-txt" id="footer-clock">—</span>
+</div>
+</div><!-- end page-translation -->
+<div id="page-proposal" class="page">
+  <div id="fp-wrap">
+    <iframe
+      class="fp-book"
+      allowfullscreen=""
+      allow="clipboard-write"
+      scrolling="no"
+      src="https://heyzine.com/flip-book/bc890ffead.html">
+    </iframe>
+    <div class="fp-video-wrap">
+      <iframe
+        title="vimeo-player"
+        src="https://player.vimeo.com/video/1188659035?h=b0c8653e9b"
+        frameborder="0"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+</div>
+
+<div id="page-introduction" class="page" style="align-items:center;justify-content:center;background:#e8e4dc;flex:1">
+  <div style="font-family:var(--serif);font-size:28px;color:rgba(26,22,18,.2);font-style:italic">Introduction — coming soon</div>
+</div>
+<div id="page-atlas" class="page">
+
+  <!-- ATLAS SUB-NAV -->
+  <div id="atlas-subnav">
+    <div class="atlas-tab active" data-sub="atlas-home" onclick="atlasTab(this)">
+      <span class="atab-num">00</span>Home
+    </div>
+    <div class="atlas-tab" data-sub="atlas-macro" onclick="atlasTab(this)">
+      <span class="atab-num">I</span>Macro · Environment
+    </div>
+    <div class="atlas-tab" data-sub="atlas-organism" onclick="atlasTab(this)">
+      <span class="atab-num">II</span>Organism · Response
+    </div>
+    <div class="atlas-tab" data-sub="atlas-cellular" onclick="atlasTab(this)">
+      <span class="atab-num">III</span>Cellular · Census
+    </div>
+  </div>
+
+  <!-- HOME: 3 cards -->
+  <div id="atlas-home" class="active">
+    <div class="atlas-home-inner">
+      <div class="atlas-home-title">three <em>scales</em>, one reef</div>
+      <div class="atlas-home-lede">A continuous reading of Pan-American reefs across macro, organism, and cellular scales. Each atlas is a distinct lens on the same collapse.</div>
+      <div class="atlas-cards-grid">
+
+        <div class="atlas-card-mini" onclick="atlasTabById('atlas-macro')">
+          <div class="acm-tag">Vol I · Macro</div>
+          <div class="acm-num" style="color:#d92b2b">I</div>
+          <div class="acm-title">Macro · <em>Environment</em></div>
+          <div class="acm-desc">Sea surface temperature, DHW accumulation, and oceanographic stress mapped at regional scale across the Caribbean basin.</div>
+          <div class="acm-swatch" style="background:linear-gradient(90deg,#5fb4d6,#d92b2b)"></div>
+          <div class="acm-foot"><span>SST · DHW · Bleaching</span><span style="color:#c03020">Open →</span></div>
+        </div>
+
+        <div class="atlas-card-mini" onclick="atlasTabById('atlas-organism')">
+          <div class="acm-tag">Vol II · Organism</div>
+          <div class="acm-num" style="color:#ff2bd6">II</div>
+          <div class="acm-title">Organism · <em>Response</em></div>
+          <div class="acm-desc">Zooxanthellae density, Fv/Fm photosynthetic yield, and GFP fluorescence as organism-level indicators of stress response.</div>
+          <div class="acm-swatch" style="background:linear-gradient(90deg,#00f0ff,#ff2bd6,#6b1450)"></div>
+          <div class="acm-foot"><span>Fv/Fm · ZX · GFP</span><span style="color:#c03020">Open →</span></div>
+        </div>
+
+        <div class="atlas-card-mini" onclick="atlasTabById('atlas-cellular')">
+          <div class="acm-tag">Vol III · Cellular</div>
+          <div class="acm-num" style="color:#3d8a4f">III</div>
+          <div class="acm-title">Cellular · <em>Census</em></div>
+          <div class="acm-desc">ROS multiplier, apoptosis threshold breaches, and real-time cellular census tracking symbiosis collapse at the tissue level.</div>
+          <div class="acm-swatch" style="background:linear-gradient(90deg,#3d8a4f,#e8c860,#6b1450)"></div>
+          <div class="acm-foot"><span>ROS · Apoptosis · ZX%</span><span style="color:#c03020">Open →</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="atlas-macro" class="atlas-sub">
+    <iframe src="about:blank" data-src="atlas-macro.html" style="width:100%;height:100%;border:none;display:block"></iframe>
+  </div>
+  <div id="atlas-organism" class="atlas-sub">
+    <iframe src="about:blank" data-src="atlas-organism.html" style="width:100%;height:100%;border:none;display:block"></iframe>
+  </div>
+  <div id="atlas-cellular" class="atlas-sub">
+    <iframe src="about:blank" data-src="atlas-cellular.html" style="width:100%;height:100%;border:none;display:block"></iframe>
+  </div>
+
+</div>
+<div id="page-team" class="page" style="align-items:center;justify-content:center;background:#e8e4dc;flex:1">
+  <div style="font-family:var(--serif);font-size:28px;color:rgba(26,22,18,.2);font-style:italic">Our Team — coming soon</div>
+</div>
+
+</div>
+
+<!-- ONBOARDING POPUP -->
+<div id="ob-overlay">
+  <div id="ob-box">
+    <div id="ob-progress"><div id="ob-progress-fill"></div></div>
+    <div id="ob-hdr">
+      <span class="ob-step-lbl" id="ob-step-lbl">Step 1 of 5</span>
+      <button id="ob-skip" onclick="closeOnboarding()">Skip →</button>
+    </div>
+    <div id="ob-content"></div>
+    <div id="ob-footer">
+      <div class="ob-dots" id="ob-dots"></div>
+      <div style="display:flex;gap:8px">
+        <button class="ob-btn" id="ob-prev" onclick="obNav(-1)">← Back</button>
+        <button class="ob-btn" id="ob-next" onclick="obNav(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE TOGGLE BUTTON -->
+<button id="guide-toggle" onclick="toggleGuide()" title="How to use">?</button>
+
+<!-- GUIDE PANEL -->
+<div id="guide-panel">
+  <div class="gp-hdr">
+    <div>
+      <div class="gp-title">How to Use</div>
+      <div class="gp-sub">Multisensory Translation System</div>
+    </div>
+    <button onclick="toggleGuide()" style="background:transparent;border:none;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--ink3);padding:2px 4px">✕</button>
+  </div>
+  <div class="gp-body">
+
+    <!-- WHAT IS THIS -->
+    <div class="gp-section">
+      <div class="gp-sec-title">What this is</div>
+      <div class="gp-text">
+        A real-time translation of coral reef stress signals into equivalent human sensory experiences, across 6 biological channels simultaneously. When a reef bleaches, <strong>what would that feel like in a human body?</strong>
+      </div>
+    </div>
+
+    <div class="gp-divider"></div>
+
+    <!-- HOW TO INTERACT -->
+    <div class="gp-section">
+      <div class="gp-sec-title">How to interact</div>
+
+      <div class="gp-step">
+        <div class="gp-num">1</div>
+        <div class="gp-text">
+          <strong>Choose a scenario</strong>: Healthy, Heat Stress, Bleaching, or Mass Mortality. Or drag the two sliders manually: <em>SST (sea surface temperature)</em> and <em>DHW (accumulated heat weeks)</em>.
+        </div>
+      </div>
+
+      <div class="gp-step">
+        <div class="gp-num">2</div>
+        <div class="gp-text">
+          <strong>Watch the reef canvas</strong> update in real time. Polyp color, zooxanthellae density, GFP glow, nerve flashes, and ROS particles all reflect the current stress state.
+        </div>
+      </div>
+
+      <div class="gp-step">
+        <div class="gp-num">3</div>
+        <div class="gp-text">
+          <strong>Read the translation table</strong>: each row maps one coral signal (left) to its human equivalent (right), with a sensation description and the receiving organ.
+        </div>
+      </div>
+
+      <div class="gp-step">
+        <div class="gp-num">4</div>
+        <div class="gp-text">
+          <strong>Hover over underlined terms</strong> in the table. A tooltip explains the scientific meaning in plain language, with source citation.
+        </div>
+      </div>
+    </div>
+
+    <div class="gp-divider"></div>
+
+    <!-- 6 CHANNELS -->
+    <div class="gp-section">
+      <div class="gp-sec-title">6 Translation Channels</div>
+
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#c03020"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#c03020">● Temperature → Skin temp</span>
+          <span class="gp-ch-desc">SST deviation mapped to skin surface °C via TRPV1 threshold</span>
+        </div>
+      </div>
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#2050a0"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#2050a0">◆ Acoustic SPL → Emotional sound</span>
+          <span class="gp-ch-desc">Reef soundscape health mapped to cochlea frequency &amp; emotional state</span>
+        </div>
+      </div>
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#c87020"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#c87020">▲ Nerve Net AP → Micro-vibration</span>
+          <span class="gp-ch-desc">Polyp action potential frequency mapped to muscle EMG Hz</span>
+        </div>
+      </div>
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#5a4a90"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#5a4a90">◐ UV / GFP → Visual perception</span>
+          <span class="gp-ch-desc">Zooxanthellae loss &amp; GFP surge mapped to colour saturation shift</span>
+        </div>
+      </div>
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#1a7060"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#1a7060">◉ Water Chemistry → Scent &amp; taste</span>
+          <span class="gp-ch-desc">pH &amp; ROS levels mapped to olfactory experience via analogue scale</span>
+        </div>
+      </div>
+      <div class="gp-ch">
+        <div class="gp-ch-dot" style="background:#2a6040"></div>
+        <div class="gp-ch-info">
+          <span class="gp-ch-name" style="color:#2a6040">▼ Polyp Contraction → Muscle spasm</span>
+          <span class="gp-ch-desc">Coral contraction rate &amp; nerve frequency mapped to %MVC &amp; twitch timing</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="gp-divider"></div>
+
+    <!-- READING THE TABLE -->
+    <div class="gp-section">
+      <div class="gp-sec-title">Reading the translation table</div>
+      <div class="gp-text" style="margin-bottom:8px">Each row contains:</div>
+      <div class="gp-step" style="margin-bottom:5px">
+        <div class="gp-tag" style="margin-top:2px">LEFT</div>
+        <div class="gp-text"><strong>Coral signal</strong>: the raw biological value (°C, mV, Hz, pH...) computed from SST and DHW in real time.</div>
+      </div>
+      <div class="gp-step" style="margin-bottom:5px">
+        <div class="gp-tag" style="margin-top:2px">BAR</div>
+        <div class="gp-text">Intensity bar: 0% = baseline healthy, 100% = maximum stress. Colour shifts green → orange → red as severity increases.</div>
+      </div>
+      <div class="gp-step">
+        <div class="gp-tag" style="margin-top:2px">RIGHT</div>
+        <div class="gp-text"><strong>Human equivalent</strong>: the translated value, sensation description in italics, and the receiving organ in small caps.</div>
+      </div>
+    </div>
+
+    <div class="gp-divider"></div>
+
+    <!-- ABOUT THE DATA -->
+    <div class="gp-section">
+      <div class="gp-sec-title">About the data</div>
+      <div class="gp-note">
+        SST, DHW, Fv/Fm, ZX%, and TRPV1 thresholds are grounded in published science. The sensory translations (sound, vision, scent, spasm) are artistic analogues, biological in logic, not clinical measurements. Hover any underlined term for the specific source.
+      </div>
+    </div>
+
+  </div><!-- .gp-body -->
+</div><!-- #guide-panel -->
+
+<div id="term-tip"><div class="tt-term" id="tt-term"></div><div class="tt-body" id="tt-body"></div><div class="tt-src" id="tt-src"></div></div>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────
+const lp=(a,b,t)=>a+(b-a)*Math.max(0,Math.min(1,t));
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ── BIO ENGINE ───────────────────────────────────────────
+function calcBio(temp,dhw){
+  const ex=Math.max(0,temp-27);
+  const zx=cl(1-ex*.09-dhw*.046,0,1);
+  return{
+    ex,
+    fvm:cl(.68-ex*.055-dhw*.022,0,.68),
+    zx,
+    ros:cl(1+ex*.22+dhw*.1,1,5),
+    gfp:cl((1-zx)*.9+ex*.04,0,1),
+    hz:cl(ex*1.5+dhw*.5,0,10),
+    ph:cl(8.3-ex*.05-dhw*.03,7.4,8.5),
+    ctr:cl(ex*.12+dhw*.06,0,1)
+  };
+}
+
+function stOf(temp,dhw){
+  const ex=Math.max(0,temp-27);
+  if(dhw>=10||ex>=6) return{l:'Mass Mortality',c:'var(--ink3)',dot:'rgba(136,135,128,1)'};
+  if(dhw>=4||ex>=4)  return{l:'Bleaching',      c:'var(--red)',dot:'#c03020'};
+  if(ex>=1.5||dhw>=2) return{l:'Heat Stress',    c:'var(--orange)',dot:'#c87020'};
+  return{l:'Healthy',c:'var(--teal)',dot:'#1a7060'};
+}
+
+// ── 6 CHANNELS (English) ──────────────────────────────────
+const CH=[
+  {ic:'●',coral:'Temperature',
+   rowTip:{title:'Temperature Channel',coral:'Sea Surface Temperature deviation from MMM baseline (27°C). Coral does not sense absolute temperature, only the anomaly ΔT.',human:'Skin thermoreceptors TRPV1 fire at 43°C+. Formula: T_skin = 36 + ΔT × 1.8°C.',src:'Julius & Patapoutian 2021 · Nobel Prize'},human:'Skin Temperature',color:'#c03020',
+   cf:(b,t)=>({l:`${t.toFixed(1)}°C · ΔT +${b.ex.toFixed(1)}°C`,v:cl(b.ex/7,0,1)}),
+   hf:v=>{const s=(36+v*7).toFixed(1);return{l:`Skin ${s}°C`,o:'TRPV1 / TRPM8 skin',
+     d:v<.07?'No sensation, baseline normal':v<.25?'Warmth, like a 40°C hand bath':v<.5?'Hot, palm on sun-baked stone':v<.75?'Burning, reflex withdrawal':'Scalding, tissue damage'};}},
+  {ic:'◆',coral:'Acoustic SPL',
+   rowTip:{title:'Acoustic SPL Channel',coral:'Total soundscape energy of the reef (Hz, dB). A healthy reef hums with snapping shrimp (800–3000Hz) and fish calls. A dying reef goes silent.',human:'Cochlea frequency and limbic emotional response. Silence = threat signal to the brain.',src:'Radford et al. 2014 · Marine Ecology Progress Series'},human:'Emotional Sound',color:'#2050a0',
+   cf:(b,t,d)=>{const h=cl(1-(b.ex/7+d/14)/2,0,1);return{l:`${Math.round(lp(3000,60,h))}Hz · ${h>.6?'vibrant':h>.3?'fading':'silent'}`,v:1-h};},
+   hf:v=>{return{l:`${Math.round(lp(1200,40,v))}Hz · ${v<.3?'Calm':v<.6?'Anxious':'Grief'}`,o:'Cochlea / limbic system',
+     d:v<.1?'Wave wash, deep calm':v<.35?'Sparse tones, quiet loneliness':v<.6?'Low hum, unease, dread':v<.85?'Tinnitus, profound sadness':'Total silence, emptiness'};} },
+  {ic:'▲',coral:'Nerve Net AP',
+   rowTip:{title:'Nerve Net AP Channel',coral:'Action potential firing rate of the coral nerve net. No brain, signals radiate outward. Resting: −65mV. Stress peak: +35mV at up to 10Hz.',human:'Equivalent muscle micro-vibration frequency (EMG). 0Hz = deep sleep. 10Hz = uncontrolled tremor.',src:'Anderson 1976 · J Exp Biol 65:381'},human:'Micro-vibration',color:'#c87020',
+   cf:(b)=>({l:`AP ${b.hz>0?Math.round(lp(-65,35,b.hz/10)):-65}mV · ${b.hz.toFixed(1)}Hz`,v:cl(b.hz/10,0,1)}),
+   hf:v=>{return{l:`${(v*10).toFixed(1)}Hz micro-vibration`,o:'Muscle spindle / mechanoreceptor',
+     d:v<.05?'Silent, muscle fully released':v<.2?'Single eye twitch':v<.45?'Calf cramp, spreading':v<.75?'Full-body shiver, mild electric':'Uncontrolled tremor, loss of control'};} },
+  {ic:'◐',coral:'UV / GFP Light',
+   rowTip:{title:'UV / GFP Light Channel',coral:'As zooxanthellae (ZX%) are expelled, fluorescent GFP protein surges, reef glows vivid blue-green before dying. Wavelength shifts from 476nm to 600nm.',human:'Visual saturation. Normal: warm ochre. GFP surge: painful vivid green. Bleached: achromatopsia, grey only.',src:'Salih et al. 2000 · Nature 408:850'},human:'Visual Perception',color:'#5a4a90',
+   cf:(b)=>({l:`ZX ${Math.round(b.zx*100)}% · GFP ${Math.round(b.gfp*100)}% · ${Math.round(lp(600,476,b.zx))}nm`,v:b.gfp}),
+   hf:v=>{const s=Math.round(100-v*90);return{l:`Saturation ${s}% · ${v<.4?'Normal':v<.7?'Glaring':'Faded'}`,o:'Cone cells / visual cortex',
+     d:v<.1?'Warm ochre, comfortable gaze':v<.35?'Vivid, abnormal green hue':v<.65?'Glaring, beautiful but painful':v<.88?'Fading, grey, lost contrast':'Achromatopsia, white-grey only'};} },
+  {ic:'◉',coral:'Water Chemistry',
+   rowTip:{title:'Water Chemistry Channel',coral:'pH drops as CO₂ increases. ROS (reactive oxygen species) multiply when photosynthesis is blocked by heat. ROS > 2× triggers cell apoptosis.',human:'Olfactory analogue: 1× = salt sea. 2× = pool chlorine. 4× = metal acid. 5× = toxic air.',src:'Weis 2008 · Bioessays 30:715'},human:'Scent & Taste',color:'#1a7060',
+   cf:(b)=>({l:`pH ${b.ph.toFixed(2)} · ROS ${b.ros.toFixed(1)}×`,v:cl((b.ros-1)/4,0,1)}),
+   hf:v=>{return{l:`ROS ${(1+v*4).toFixed(1)}× · ${v<.25?'Pleasant':v<.6?'Unpleasant':'Toxic'}`,o:'Olfactory epithelium / tongue',
+     d:v<.08?'Salt sea breeze, morning calm':v<.3?'Fresh kelp, damp, faintly briny':v<.55?'Pool chlorine, stinging nostrils':v<.8?'Metal acid, bitter mouth':'Toxic air, throat pain, eyes burning'};} },
+  {ic:'▼',coral:'Polyp Contraction',
+   rowTip:{title:'Polyp Contraction Channel',coral:'Polyp body and tentacle retraction driven by nerve net AP. Contraction % and twitch duration (ms) measure stress response intensity.',human:'Skeletal muscle equivalent: %MVC and twitch timing. 0% = sleep. 100% = continuous spasm.',src:'Horridge 1957 · Phil Trans R Soc B 240:495'},human:'Muscle Spasm',color:'#2a6040',
+   cf:(b)=>({l:`Ctr ${Math.round(b.ctr*100)}% · ${b.hz.toFixed(1)}Hz · ${b.hz>0?Math.round(500-b.ctr*450)+'ms':'—'}`,v:b.ctr}),
+   hf:v=>{const m=Math.round(v*100);return{l:`${m}% MVC · ${v<.3?'Mild':v<.65?'Moderate':'Severe'}`,o:'Motor unit / skeletal muscle',
+     d:v<.05?'No contraction, deep sleep release':v<.2?'Single twitch, falling asleep':v<.45?'Calf cramp, radiating outward':v<.75?'Rigid, sudden electric shock':'Continuous spasm, no control'};} }
+];
+
+
+// ── CORAL CANVAS ──────────────────────────────────────────
+const rcv=document.getElementById('reef-cv');
+const rctx=rcv.getContext('2d');
+const RW=720,RH=200;
+function resizeReefCanvas(){
+  const wrap = document.getElementById('reef-canvas-wrap');
+  const cv = document.getElementById('reef-cv');
+  if(!wrap||!cv) return;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  if(w>0 && h>0){ cv.width=w; cv.height=h; }
+}
+let Ti=0;
+
+const HEADS=[
+  {x:148,y:130,rx:100,ry:55,pp:mkP(148,130,100,55,14)},
+  {x:355,y:118,rx:128,ry:66,pp:mkP(355,118,128,66,21)},
+  {x:558,y:132,rx:86,ry:52,pp:mkP(558,132,86,52,11)},
+];
+function mkP(cx,cy,rx,ry,n){
+  return Array.from({length:n},()=>{
+    const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random());
+    return{x:cx+Math.cos(a)*rx*r*.82,y:cy+Math.sin(a)*ry*r*.82,
+      ph:Math.random()*Math.PI*2,sp:.3+Math.random()*.5,
+      gt:Math.floor(Math.random()*3),zn:Math.floor(3+Math.random()*4)};
+  });
+}
+let sparts=[];
+
+function drawReef(bio,temp,dhw){
+  rctx.clearRect(0,0,RW,RH);
+  const{ex,zx,gfp,hz,ros,ctr}=bio;
+  const dead=dhw>=12||ex>=6, bleach=dhw>=4||ex>=4;
+
+  // background, cream tones
+  rctx.fillStyle=dead?'#d8d4cc':bleach?'#ddd8ce':'#c8d8d0';
+  rctx.fillRect(0,0,RW,RH);
+
+  // subtle caustic lines
+  for(let i=0;i<6;i++){
+    const lx=50+i*120+Math.sin(Ti*.5+i)*8;
+    rctx.beginPath();rctx.moveTo(lx,0);rctx.lineTo(lx+22,RH*.6);rctx.lineTo(lx-22,RH*.6);
+    rctx.fillStyle=`rgba(255,255,255,${.06+Math.sin(Ti+i)*.02})`;rctx.fill();
+  }
+
+  // GFP glow tint
+  if(gfp>.15&&!dead){
+    rctx.fillStyle=`rgba(160,140,200,${gfp*.06})`;rctx.fillRect(0,0,RW,RH*.6);
+  }
+  // thermal haze
+  if(ex>1.5){
+    for(let i=0;i<2;i++){
+      const hy=80+i*50+Math.sin(Ti*.4+i)*4;
+      rctx.beginPath();
+      for(let hx=0;hx<RW;hx+=4){const y=hy+Math.sin(hx*.04+Ti+i)*(1.5+i*ex*.2);hx===0?rctx.moveTo(hx,y):rctx.lineTo(hx,y);}
+      rctx.strokeStyle=`rgba(160,80,40,${.04+ex*.01})`;rctx.lineWidth=.5;rctx.stroke();
+    }
+  }
+
+  // floor
+  rctx.fillStyle='#b8ae98';
+  rctx.beginPath();rctx.ellipse(360,260,560,60,0,0,Math.PI*2);rctx.fill();
+
+  // skeleton color
+  const sk=dead?'#e8e4da':bleach?'#ddd8c8':'#2a2018';
+  HEADS.forEach(h=>{
+    rctx.beginPath();rctx.ellipse(h.x,h.y+6,h.rx,h.ry*.6,0,0,Math.PI*2);
+    rctx.fillStyle=sk;rctx.fill();
+    rctx.strokeStyle='rgba(90,80,60,.15)';rctx.lineWidth=.8;rctx.stroke();
+  });
+
+  // nerve flashes
+  if(hz>0) HEADS.forEach(h=>{
+    h.pp.forEach((p,pi)=>{
+      if(pi>0&&Math.random()>(1-hz*.055)){
+        const pv=h.pp[pi-1];
+        rctx.beginPath();rctx.moveTo(p.x,p.y);rctx.lineTo(pv.x,pv.y);
+        rctx.strokeStyle=`rgba(160,110,30,${hz*.06})`;rctx.lineWidth=1;rctx.stroke();
+      }
+    });
+  });
+
+  // ROS particles
+  if(ros>1.5&&Math.random()>(1-(ros-1)*.03)){
+    const h=HEADS[Math.floor(Math.random()*3)];
+    sparts.push({x:h.x+(Math.random()-.5)*100,y:lp(120,175,Math.random()),vx:(Math.random()-.5)*.7,vy:-.5-Math.random()*.6,life:1,dc:.012,warm:Math.random()>.5});
+  }
+  sparts=sparts.filter(p=>p.life>0);
+  sparts.forEach(p=>{
+    rctx.beginPath();rctx.arc(p.x,p.y,1.4,0,Math.PI*2);
+    rctx.fillStyle=p.warm?`rgba(180,80,30,${p.life*.5})`:`rgba(180,150,30,${p.life*.5})`;
+    rctx.fill();p.x+=p.vx;p.y+=p.vy;p.life-=p.dc;
+  });
+
+  HEADS.forEach(h=>{
+    h.pp.forEach((p,pi)=>{
+      const cv2=ctr>.05?ctr*.65+Math.sin(Ti*p.sp+p.ph)*.15*ctr:.04;
+      const to=1-cv2*.65,sw=Math.sin(Ti*.4+p.ph)*2.5*to;
+      const bR=dead?220:bleach?Math.round(195+gfp*40):45;
+      const bG=dead?215:bleach?Math.round(185+gfp*35):62;
+      const bBl=dead?200:bleach?Math.round(165+gfp*30):38;
+      rctx.beginPath();rctx.ellipse(p.x,p.y,8,6-cv2*2,0,0,Math.PI*2);
+      rctx.fillStyle=`rgba(${bR},${bG},${bBl},.8)`;rctx.fill();
+      // ZX dots
+      for(let z=0;z<Math.round(p.zn*zx);z++){
+        const za=p.ph+z*1.1,zx2=p.x+Math.cos(za)*3.4,zy2=p.y+Math.sin(za)*2.2;
+        rctx.beginPath();rctx.ellipse(zx2,zy2,1.8,1.4,0,0,Math.PI*2);
+        rctx.fillStyle='rgba(20,60,28,.85)';rctx.fill();
+      }
+      // GFP glow
+      if(gfp>.12&&!dead){
+        const gc=[`rgba(100,80,200`,`rgba(200,70,50`,`rgba(50,70,200`][p.gt];
+        rctx.beginPath();rctx.arc(p.x,p.y,9,0,Math.PI*2);
+        rctx.fillStyle=`${gc},${gfp*.07+Math.sin(Ti*2+pi)*.02})`;rctx.fill();
+      }
+      // EMS
+      if(cv2>.08){
+        rctx.beginPath();rctx.ellipse(p.x,p.y,9+cv2*3,7+cv2*2,0,0,Math.PI*2);
+        rctx.strokeStyle=`rgba(40,110,80,${cv2*.4})`;rctx.lineWidth=.7;rctx.stroke();
+      }
+      // thermal
+      if(ex>.5){
+        rctx.beginPath();rctx.ellipse(p.x,p.y,8,6,0,0,Math.PI*2);
+        rctx.fillStyle=`rgba(160,80,30,${ex*.03})`;rctx.fill();
+      }
+      // tentacles
+      if(!dead) for(let tk=0;tk<5;tk++){
+        const ta=(-Math.PI/2)+(tk-2)*.28*to,tL=11*to;
+        rctx.beginPath();rctx.moveTo(p.x+Math.cos(ta)*5,p.y-3);
+        rctx.quadraticCurveTo(p.x+Math.cos(ta)*tL*.5+sw*.5,p.y-3+Math.sin(ta)*tL*.33,p.x+Math.cos(ta)*tL+sw,p.y-3+Math.sin(ta)*tL*.55-tL*.35);
+        if(gfp>.15&&!dead){const gc=[`rgba(100,80,200`,`rgba(200,70,50`,`rgba(50,70,200`][p.gt];rctx.strokeStyle=`${gc},${.18+to*.32})`;}
+        else rctx.strokeStyle=`rgba(30,120,60,${.18+to*.32})`;
+        rctx.lineWidth=.8;rctx.stroke();
+      }
+    });
+  });
+  // water shimmer
+  for(let i=0;i<RW;i+=3){const sy=10+Math.sin(i*.06+Ti*.7)*2;rctx.fillStyle=`rgba(220,230,220,${.04+Math.sin(i*.1+Ti)*.01})`;rctx.fillRect(i,sy,2,3);}
+  Ti+=.016;
+}
+
+// ── TRANSLATION ROWS ──────────────────────────────────────
+function renderTrans(b,temp,dhw){
+  document.getElementById('trans-body').innerHTML=CH.map((ch,i)=>{
+    const cf=ch.cf(b,temp,dhw),hf=ch.hf(cf.v);
+    const bw=Math.round(Math.max(0,Math.min(1,cf.v))*100);
+    const barCol=cf.v<.25?ch.color:cf.v<.6?'#c87020':'#c03020';
+    return`<div class="trans-row" style="cursor:default"
+      onmouseenter="showRowTip(event,${i})"
+      onmouseleave="hideTip()">
+      <div>
+        <div class="tc-label" style="color:${ch.color}">${ch.ic} ${ch.coral}</div>
+        <div class="tc-val" style="color:${ch.color}">${cf.l}</div>
+        <div class="tc-bar"><div class="tc-fill" style="width:${bw}%;background:${barCol}"></div></div>
+      </div>
+      <div class="trans-arrow">→</div>
+      <div>
+        <div class="th-label">${ch.human}</div>
+        <div class="th-val">${hf.l}</div>
+        <div class="th-feel" style="border-color:${ch.color}">${hf.d}</div>
+        <div class="th-organ">${hf.o}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+
+// ── ONBOARDING STEPS ─────────────────────────────────────
+const OB_STEPS = [
+  {
+    icon: '🪸',
+    title: 'What is this?',
+    body: `<strong>Multisensory Translation System: Coral to Human</strong> translates the stress signals of a dying coral reef into equivalent human sensory experiences in real time.<br><br>
+As ocean temperature rises, we ask: <em>if a reef could speak to a human body, what would it say?</em>`,
+    hint: null,
+  },
+  {
+    icon: '🎚️',
+    title: 'Set the conditions',
+    body: `Use the two controls at the top to set ocean conditions:`,
+    hint: `<strong>SST slider</strong>: Sea Surface Temperature (24–34°C). Normal is 27°C. Drag right to heat the ocean.<br><br>
+<strong>DHW slider</strong>: Degree Heating Weeks (0–14). How many weeks of accumulated heat. Drag right to simulate a prolonged bleaching event.<br><br>
+Or use the <strong>Scenario buttons</strong> to jump directly to Healthy · Heat Stress · Bleaching · Mass Mortality.`,
+  },
+  {
+    icon: '🔬',
+    title: 'Watch the reef respond',
+    body: `The animated canvas below the controls shows a live reef reacting to your inputs:`,
+    hint: `<strong>Polyp colour</strong>: dark brown (healthy) → white (bleaching) → pale grey (dead)<br><br>
+<strong>Green dots</strong>: zooxanthellae algae inside each polyp. They disappear as temperature rises.<br><br>
+<strong>Purple/orange glow</strong>: GFP protein, increases as zooxanthellae are expelled<br><br>
+<strong>Yellow flashes</strong>: nerve impulses spreading through the reef<br><br>
+<strong>Floating particles</strong>: ROS reactive oxygen species, toxic byproducts of heat stress`,
+  },
+  {
+    icon: '↔️',
+    title: 'Read the translation',
+    body: `The table below maps each coral signal to a human equivalent across <strong>6 channels</strong>:`,
+    channels: true,
+    hint: `Each row shows the <strong>coral value</strong> (left) → an intensity bar → the <strong>human sensation</strong> (right) with a description of what it feels like and which organ receives it.`,
+  },
+  {
+    icon: '💬',
+    title: 'Explore the terms',
+    body: `Many scientific terms in the table are <strong>interactive</strong>.`,
+    hint: `<strong>Hover over any underlined term</strong>: a tooltip explains it in plain language with the scientific source.<br><br>
+Look for terms like <em>DHW</em>, <em>Fv/Fm</em>, <em>ZX</em>, <em>ROS</em>, <em>TRPV1</em>, <em>MVC</em>...<br><br>
+Use the <strong>?</strong> button (bottom right) anytime to reopen this guide.`,
+    final: true,
+  },
+];
+
+const OB_CHANNELS = [
+  {color:'#c03020', text:'<strong>Temperature</strong> → Skin temperature (TRPV1 heat receptor)'},
+  {color:'#2050a0', text:'<strong>Acoustic SPL</strong> → Emotional sound (cochlea / limbic system)'},
+  {color:'#c87020', text:'<strong>Nerve Net AP</strong> → Micro-vibration (muscle EMG)'},
+  {color:'#5a4a90', text:'<strong>UV / GFP</strong> → Visual saturation (cone cells)'},
+  {color:'#1a7060', text:'<strong>Water Chemistry</strong> → Scent &amp; taste (olfactory)'},
+  {color:'#2a6040', text:'<strong>Polyp Contraction</strong> → Muscle spasm (motor unit)'},
+];
+
+let obStep = 0;
+
+function renderOb(){
+  const s = OB_STEPS[obStep];
+  const total = OB_STEPS.length;
+
+  // progress
+  document.getElementById('ob-progress-fill').style.width = ((obStep+1)/total*100) + '%';
+  document.getElementById('ob-step-lbl').textContent = `Step ${obStep+1} of ${total}`;
+
+  // dots
+  document.getElementById('ob-dots').innerHTML = OB_STEPS.map((_,i)=>
+    `<div class="ob-dot ${i===obStep?'active':''}"></div>`).join('');
+
+  // content
+  let html = `<div class="ob-icon">${obStep + 1}</div>`;
+  html += `<div class="ob-title">${s.title}</div>`;
+  html += `<div class="ob-body">${s.body}</div>`;
+  if(s.channels){
+    html += `<div class="ob-channels">${OB_CHANNELS.map(ch=>
+      `<div class="ob-ch"><div class="ob-ch-dot" style="background:${ch.color}"></div><div class="ob-ch-text">${ch.text}</div></div>`
+    ).join('')}</div>`;
+  }
+  if(s.hint){
+    html += `<div class="ob-hint">${s.hint}</div>`;
+  }
+  document.getElementById('ob-content').innerHTML = html;
+
+  // buttons
+  const prev = document.getElementById('ob-prev');
+  const next = document.getElementById('ob-next');
+  prev.style.visibility = obStep === 0 ? 'hidden' : 'visible';
+  if(s.final){
+    next.textContent = 'Start exploring →';
+    next.style.background = '#1a7060';
+    next.style.borderColor = '#1a7060';
+  } else {
+    next.textContent = 'Next →';
+    next.style.background = 'var(--ink)';
+    next.style.borderColor = 'var(--ink)';
+  }
+}
+
+function obNav(dir){
+  if(dir === 1 && obStep === OB_STEPS.length - 1){
+    closeOnboarding(); return;
+  }
+  obStep = Math.max(0, Math.min(OB_STEPS.length-1, obStep+dir));
+  renderOb();
+}
+
+function closeOnboarding(){
+  const ov = document.getElementById('ob-overlay');
+  ov.style.opacity = '0';
+  ov.style.transition = 'opacity .3s ease';
+  setTimeout(()=>{ ov.style.display='none'; }, 300);
+}
+
+// Init popup, called after HTML is ready (see bottom of page)
+
+// ── GUIDE PANEL ─────────────────────────────────────────
+
+function toggleGuide(){
+  const panel = document.getElementById('guide-panel');
+  const btn   = document.getElementById('guide-toggle');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open');
+  btn.textContent = isOpen ? '?' : '✕';
+  btn.style.background = isOpen ? 'var(--ink)' : 'var(--red)';
+}
+// Close on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('guide-panel');
+  const btn   = document.getElementById('guide-toggle');
+  if(panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn){
+    panel.classList.remove('open');
+    btn.textContent = '?';
+    btn.style.background = 'var(--ink)';
+  }
+});
+
+// ── TERM TOOLTIP DICTIONARY ──────────────────────────────
+const TERMS = {
+  // ── Coral biology ──
+  'SST': {
+    body: 'Sea Surface Temperature, measured by satellite. Coral begins to stress when SST exceeds MMM (maximum monthly mean) by 1°C or more.',
+    src: 'NOAA Coral Reef Watch · Liu et al. 2014'
+  },
+  'ΔT': {
+    body: 'Thermal anomaly: ΔT = SST − MMM (27°C). What coral actually feels, not absolute temperature. ΔT = 0 is normal, ΔT > 1°C begins stress.\n\nFormula: T_skin = 36 + ΔT × 1.8°C. TRPV1 fires when skin > 43°C ≈ ΔT +3.9°C.',
+    src: 'NOAA CRW · MMM baseline'
+  },
+  'MMM': {
+    body: 'Maximum Monthly Mean: the thermal baseline a coral population has adapted to over millennia. Used as stress reference point (≈ 27°C in the South China Sea).',
+    src: 'NOAA CRW climatology dataset'
+  },
+  'DHW': {
+    body: 'Accumulated heat weeks: DHW = Σ(ΔT × weeks) when ΔT > 1°C.\n\nDHW ≥ 4 : bleaching alert\nDHW ≥ 8 : mass bleaching\nDHW ≥ 12 : mortality\n\nSpO₂ = 98 − DHW × 2.0 % (analogue for cellular oxygen loss)',
+    src: 'Liu et al. 2014 · Remote Sensing 6:11579'
+  },
+  'Fv/Fm': {
+    body: 'Maximum photochemical yield of Photosystem II. Measured by PAM fluorometry.\n\nFv/Fm = (Fm − F0) / Fm\n\nHealthy: 0.65–0.68 · Stress: < 0.50\nBleaching: < 0.20 · Dead: ≈ 0\n\nHuman equiv: % cellular respiration efficiency',
+    src: 'Warner, Fitt & Schmidt 1999 · PNAS 96:8007'
+  },
+  'PSII': {
+    body: 'Photosystem II: protein complex in zooxanthellae chloroplasts. The first point damaged by high temperature, leading to electron leakage and ROS production.',
+    src: 'Warner et al. 1999'
+  },
+  'ZX': {
+    body: 'Zooxanthellae: symbiotic algae living in coral tissue. Provide 90% of coral energy via photosynthesis. When temperature rises, coral expels them → loss of colour → bleaching.',
+    src: 'Brown 1997 · Coral Reefs 16:S129'
+  },
+  'Zooxanthellae': {
+    body: 'Endosymbiotic algae (Symbiodiniaceae) living in coral tissue. Provide 90% of energy via photosynthesis. When expelled by heat, coral exposes its white calcium skeleton.',
+    src: 'Brown 1997 · Coral Reefs 16:S129'
+  },
+  'GFP': {
+    body: 'Green Fluorescent Protein, fluorescent pigment in coral tissue. When zooxanthellae are lost, GFP surges as a photoprotective response. Bleaching reefs often glow vivid blue-purple before dying.',
+    src: 'Salih et al. 2000 · Nature 408:850'
+  },
+  'ROS': {
+    body: '¹O₂, H₂O₂, O₂⁻ produced when PSII is blocked by heat, electrons leak to oxygen.\n\nROS 1× → salt sea (normal)\nROS 2× → pool chlorine (apoptosis)\nROS 4× → metal acid (DNA damage)\nROS 5× → toxic air',
+    src: 'Weis 2008 · Bioessays 30:715'
+  },
+  'pH': {
+    body: 'Acidity of seawater. Normal ≈ 8.1–8.3. As temperature rises and more CO₂ dissolves, pH drops (acidification), making it harder for coral to build calcium skeletons.',
+    src: 'Hoegh-Guldberg et al. 2007 · Science 318:1737'
+  },
+  'AP': {
+    body: 'Action Potential, electrical nerve impulse. Coral has no brain but has a diffuse nerve net. Under heat stress, AP frequency increases, triggering full-body polyp contraction.',
+    src: 'Anderson 1976 · J Exp Biol 65:381'
+  },
+  'Ctr': {
+    body: 'Contraction, degree of polyp withdrawal. Under stress, polyps retract their tentacles and shrink. Continuous contraction drains energy and further blocks photosynthesis.',
+    src: 'Horridge 1957 · Phil Trans R Soc B 240:495'
+  },
+  // ── Human physiology ──
+  'TRPV1': {
+    body: 'Transient Receptor Potential Vanilloid 1, heat receptor in skin and mucous membranes. Fires at > 43°C, sensing burning heat and capsaicin. Basis of the 2021 Nobel Prize by Julius & Patapoutian.',
+    src: 'Julius & Patapoutian 2021 · Nobel Prize Physiology'
+  },
+  'TRPM8': {
+    body: 'Transient Receptor Potential Melastatin 8, cold receptor in skin. Activated below 25°C and by menthol. Counterpart to TRPV1, also discovered by Patapoutian (Nobel 2021).',
+    src: 'Patapoutian et al. 2021 · Nobel Prize Physiology'
+  },
+  'MVC': {
+    body: 'Maximum Voluntary Contraction. 0% = fully relaxed. 100% = maximum force. EMG measures electrical muscle signals to calculate %MVC.',
+    src: 'Merletti & Parker 2004 · EMG Physiology'
+  },
+  'EMG': {
+    body: 'Electromyography, measures electrical signals from muscle fibres during contraction. Directly analogous to coral nerve net AP frequency, both are electrical signals triggering contraction.',
+    src: 'Lippold 1952 · J Physiol 117:492'
+  },
+  'SpO₂': {
+    body: 'Oxygen Saturation in blood. Normal: 95–100%. Below 90% is hypoxia. Used here as an analogue for Fv/Fm: both measure cellular respiration efficiency.',
+    src: 'Artistic mapping, no direct clinical source'
+  },
+  'Cochlea': {
+    body: 'Inner ear organ receiving sound. Contains ~15,000 hair cells sensitive to 20–20,000 Hz. Reef sounds (snapping shrimp, fish) fall in the 100–3000 Hz range.',
+    src: 'Radford et al. 2014 · Marine Ecology Progress Series'
+  },
+  'SPL': {
+    body: 'Sound Pressure Level in decibels (dB). A healthy reef has high SPL from snapping shrimp (800–3000 Hz) and fish. A dead reef is nearly silent.',
+    src: 'Radford et al. 2014'
+  },
+  'Limbic': {
+    body: 'Limbic system, brain centre for emotion and memory. Amygdala and hippocampus respond strongly to threatening or calming sounds. Reef soundscapes trigger emotional responses via this pathway.',
+    src: 'LeDoux 2000 · Annual Review of Neuroscience'
+  },
+  'Apoptosis': {
+    body: 'Programmed cell death, controlled self-destruction. When ROS exceeds threshold, zooxanthellae activate apoptosis and are expelled from coral tissue. This is the direct mechanism of bleaching.',
+    src: 'Weis 2008 · Bioessays 30:715'
+  },
+  // ── Measurement terms ──
+  'nm': {
+    body: 'Nanometre, unit of light wavelength. 476 nm = blue-green (GFP emission when healthy). 600 nm = orange-red (reflected light when zooxanthellae are lost). Human eye is most sensitive at 555 nm (yellow-green).',
+    src: 'Salih et al. 2000'
+  },
+  'mV': {
+    body: 'Millivolt, unit of electrical potential. Coral nerve net resting: −65 mV, AP peak: +25 to +35 mV. Similar to human neurons (−70 mV resting, +40 mV peak).',
+    src: 'Anderson 1976 · J Exp Biol 65:381'
+  },
+  'Hz': {
+    body: 'Hertz, unit of frequency (cycles/second). Coral nerve net AP: 0–10 Hz under stress. Human muscle vibration: also 0–10 Hz. Reef acoustic range: 100–3000 Hz.',
+    src: 'Anderson 1976; Radford et al. 2014'
+  },
+};
+
+// Tooltip engine
+const tip = document.getElementById('term-tip');
+const ttTerm = document.getElementById('tt-term');
+const ttBody = document.getElementById('tt-body');
+const ttSrc  = document.getElementById('tt-src');
+let tipVisible = false;
+
+function showRowTip(e, idx){
+  const ch = CH[idx];
+  if(!ch || !ch.rowTip) return;
+  const rt = ch.rowTip;
+  const tip = document.getElementById("term-tip");
+  const ttTerm2 = document.getElementById("tt-term");
+  const ttBody2 = document.getElementById("tt-body");
+  const ttSrc2  = document.getElementById("tt-src");
+  if(!tip || !ttTerm2) return;
+  ttTerm2.textContent = rt.title;
+  ttTerm2.style.color = ch.color || "rgba(245,240,232,.6)";
+  const monoStyle = "opacity:.45;font-size:7px;text-transform:uppercase;letter-spacing:.12em;font-family:monospace";
+  ttBody2.innerHTML =
+    "<span style=\"" + monoStyle + "\">Coral signal</span><br>" +
+    "<span style=\"line-height:1.5;display:inline-block;margin-bottom:8px\">" + rt.coral + "</span><br><br>" +
+    "<span style=\"" + monoStyle + "\">Human sensation</span><br>" +
+    "<span style=\"line-height:1.5\">" + rt.human + "</span>";
+  ttSrc2.textContent = rt.src ? "↗ " + rt.src : "";
+  positionTip(e);
+  tip.classList.add("visible");
+  tipVisible = true;
+}
+
+
+function showTip(e, key){
+  const data = TERMS[key];
+  if(!data) return;
+  ttTerm.textContent = key;
+  ttBody.innerHTML = data.body.replace(/\n/g, '<br>');
+  ttSrc.textContent  = data.src ? '↗ ' + data.src : '';
+  positionTip(e);
+  tip.classList.add('visible');
+  tipVisible = true;
+}
+function hideTip(){
+  tip.classList.remove('visible');
+  tipVisible = false;
+}
+function positionTip(e){
+  const pad = 14;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  if(x + 270 > window.innerWidth)  x = e.clientX - 270 - pad;
+  if(y + 150 > window.innerHeight) y = e.clientY - 150 - pad;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+}
+document.addEventListener('mousemove', e => { if(tipVisible) positionTip(e); });
+
+// Wrap all known terms in the trans-body after render
+function wrapTerms(container){
+  // Terms to wrap, ordered longest first to avoid partial matches
+  const termKeys = Object.keys(TERMS).sort((a,b) => b.length - a.length);
+  // Only process text nodes inside specific elements
+  const targets = container.querySelectorAll('.tc-label,.tc-val,.th-label,.th-val,.th-feel,.th-organ');
+  targets.forEach(el => {
+    let html = el.innerHTML;
+    termKeys.forEach(key => {
+      // Match whole word / standalone term, not already wrapped
+      const safe = key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const re = new RegExp(`(?<!<[^>]*)(\\b${safe}\\b|(?<=\\s|^|[·/])${safe}(?=\\s|$|[·/%°]))(?![^<]*>)`, 'g');
+      html = html.replace(re, match =>
+        `<span class="term" data-term="${key}" onmouseenter="showTip(event,'${key}')" onmouseleave="hideTip()">${match}</span>`
+      );
+    });
+    el.innerHTML = html;
+  });
+}
+
+// Patch renderTrans to call wrapTerms after render
+const _origRenderTrans = renderTrans;
+renderTrans = function(b, temp, dhw){
+  _origRenderTrans(b, temp, dhw);
+  wrapTerms(document.getElementById('trans-body'));
+};
+
+function update(){
+  const temp=parseFloat(document.getElementById('st').value);
+  const dhw=parseFloat(document.getElementById('sd').value);
+  const b=calcBio(temp,dhw);
+  const st=stOf(temp,dhw);
+
+  document.getElementById('vt').textContent=temp.toFixed(1);
+  document.getElementById('vd').textContent=dhw.toFixed(1);
+
+  // KPIs
+  document.getElementById('kpi-sst').textContent=temp.toFixed(1);
+  document.getElementById('kpi-sst-d').textContent=`● ΔT ${b.ex>0?'+':''}${b.ex.toFixed(1)}°C above MMM`;
+  document.getElementById('kpi-sst-d').className='kpi-sub '+(b.ex>1?'up':'dn');
+  document.getElementById('kpi-dhw').textContent=dhw.toFixed(1);
+  const dhwLabel=dhw<2?'No bleaching risk':dhw<4?'Watch zone':dhw<8?'Bleaching active':'Mass mortality zone';
+  document.getElementById('kpi-dhw-d').textContent=`● ${dhwLabel}`;
+  document.getElementById('kpi-dhw-d').className='kpi-sub '+(dhw>2?'up':'dn');
+  document.getElementById('kpi-fvm').textContent=b.fvm.toFixed(2);
+  const fvmLabel=b.fvm>.55?'Healthy, peak efficiency':b.fvm>.35?'Impaired, heat damage':'Critical, system failure';
+  document.getElementById('kpi-fvm-d').textContent=`● ${fvmLabel}`;
+  document.getElementById('kpi-fvm-d').className='kpi-sub '+(b.fvm<.4?'up':'dn');
+  document.getElementById('kpi-state').textContent=st.l;
+  document.getElementById('kpi-state').style.cssText=`font-size:22px;color:${st.dot}`;
+  document.getElementById('kpi-state-d').textContent=`● ZX ${Math.round(b.zx*100)}% · ROS ${b.ros.toFixed(1)}× · Hz ${b.hz.toFixed(1)}`;
+  document.getElementById('kpi-state-d').className='kpi-sub '+(b.zx<.4?'up':'dn');
+
+  // bio badges
+  document.getElementById('b-fvm').textContent=b.fvm.toFixed(2);
+  document.getElementById('b-fvm').style.color=b.fvm>.45?'var(--teal)':'var(--red)';
+  document.getElementById('b-zx').textContent=Math.round(b.zx*100)+'%';
+  document.getElementById('b-zx').style.color=b.zx>.4?'var(--green)':'var(--red)';
+  document.getElementById('b-ros').textContent=b.ros.toFixed(1)+'×';
+  document.getElementById('b-ros').style.color=b.ros<2?'var(--teal)':b.ros<3.5?'var(--orange)':'var(--red)';
+  document.getElementById('b-hz').textContent=b.hz.toFixed(1)+' Hz';
+  document.getElementById('b-ph').textContent=b.ph.toFixed(2);
+  document.getElementById('b-ph').style.color=b.ph>8.0?'var(--teal)':b.ph>7.85?'var(--orange)':'var(--red)';
+
+  // state flag on canvas
+  document.getElementById('state-flag').textContent=`● ${st.l} · ${temp.toFixed(1)}°C · DHW ${dhw.toFixed(1)}`;
+  document.getElementById('state-flag').style.color=st.dot;
+  document.getElementById('state-flag').style.borderColor=`${st.dot}55`;
+
+  // scenario buttons
+  document.querySelectorAll('.scenario-btn').forEach(btn=>btn.classList.remove('active'));
+  const vals=[[27,0,'Healthy'],[29.5,3,'Heat Stress'],[31.5,6,'Bleaching'],[33.5,12,'Mass Mortality']];
+  vals.forEach(([t,d,name],i)=>{if(Math.abs(temp-t)<.5&&Math.abs(dhw-d)<.5) document.querySelectorAll('.scenario-btn')[i].classList.add('active');});
+
+  renderTrans(b,temp,dhw);
+}
+
+window.setScenario=function(t,d){
+  document.getElementById('st').value=t;
+  document.getElementById('sd').value=d;
+  update();
+};
+
+['st','sd'].forEach(id=>document.getElementById(id).addEventListener('input',update));
+
+// canvas loop
+function loop(){drawReef(calcBio(parseFloat(document.getElementById('st').value),parseFloat(document.getElementById('sd').value)),parseFloat(document.getElementById('st').value),parseFloat(document.getElementById('sd').value));requestAnimationFrame(loop);}
+
+function tick(){
+  const s=new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
+  document.getElementById('clock').textContent=s+' ICT';
+  document.getElementById('footer-clock').textContent=s;
+}
+
+resizeReefCanvas();
+window.addEventListener("resize", resizeReefCanvas);
+update();loop();tick();setInterval(tick,1000);
+// navbar
+// Atlas sub-navigation
+window.atlasTab=function(el){
+  document.querySelectorAll('.atlas-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const sub = el.dataset.sub;
+  document.querySelectorAll('#atlas-home, .atlas-sub').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById(sub);
+  if(target){
+    target.classList.add('active');
+    // lazy-load iframe
+    const iframe = target.querySelector('iframe[data-src]');
+    if(iframe && iframe.src.includes('about:blank')){
+      iframe.src = iframe.dataset.src;
+      iframe.removeAttribute('data-src');
+    }
+  }
+};
+window.atlasTabById=function(id){
+  const tab = document.querySelector('.atlas-tab[data-sub="'+id+'"]');
+  if(tab) atlasTab(tab);
+};
+
+window.nbSelect=function(el){
+  document.querySelectorAll('.nb-link').forEach(l=>l.classList.remove('active'));
+  el.classList.add('active');
+  const map={
+    'Introduction': 'page-introduction',
+    'Proposal':     'page-proposal',
+    'Atlas':        'page-atlas',
+    'Translation System': 'page-translation',
+    'Our Team':     'page-team',
+  };
+  const pageId = map[el.textContent.trim()];
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  if(pageId){
+    const pg = document.getElementById(pageId);
+    if(pg) pg.classList.add('active');
+  }
+};
+renderOb();
+// init onboarding after full page load
+// renderOb called below after all JS defined
+</script>
+
+</div><!-- end page-introduction -->
+
+</div><!-- end pages-container -->
+</body>
+</html>
